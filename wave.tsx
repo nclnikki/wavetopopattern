@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import { useControls } from 'leva'
+import { useControls, Leva } from 'leva'
 
 const vertexShader = `
   varying vec2 vUv;
@@ -88,13 +88,13 @@ const fragmentShader = `
 
 function WaveTopoPattern() {
   const meshRef = useRef()
-  const {
-    waveSpeed,
-    patternDensity,
-    contourThickness,
-    colorA,
-    colorB
-  } = useControls({
+  const [isClient, setIsClient] = useState(false)
+
+  React.useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  const { waveSpeed, patternDensity, contourThickness, colorA, colorB } = useControls({
     waveSpeed: { value: 0.5, min: 0, max: 2, step: 0.1 },
     patternDensity: { value: 4, min: 1, max: 10, step: 0.5 },
     contourThickness: { value: 0.2, min: 0.05, max: 0.5, step: 0.05 },
@@ -113,12 +113,14 @@ function WaveTopoPattern() {
 
   useFrame((state) => {
     const { clock } = state
-    meshRef.current.material.uniforms.uTime.value = clock.getElapsedTime()
-    meshRef.current.material.uniforms.uWaveSpeed.value = waveSpeed
-    meshRef.current.material.uniforms.uPatternDensity.value = patternDensity
-    meshRef.current.material.uniforms.uContourThickness.value = contourThickness
-    meshRef.current.material.uniforms.uColorA.value.set(colorA)
-    meshRef.current.material.uniforms.uColorB.value.set(colorB)
+    if (meshRef.current) {
+      meshRef.current.material.uniforms.uTime.value = clock.getElapsedTime()
+      meshRef.current.material.uniforms.uWaveSpeed.value = waveSpeed
+      meshRef.current.material.uniforms.uPatternDensity.value = patternDensity
+      meshRef.current.material.uniforms.uContourThickness.value = contourThickness
+      meshRef.current.material.uniforms.uColorA.value.set(colorA)
+      meshRef.current.material.uniforms.uColorB.value.set(colorB)
+    }
   })
 
   return (
@@ -134,8 +136,19 @@ function WaveTopoPattern() {
 }
 
 export default function Scene() {
+  const [isClient, setIsClient] = useState(false)
+
+  React.useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return null
+  }
+
   return (
     <div className="w-full h-screen bg-black">
+      <Leva />
       <Canvas camera={{ position: [0, 0, 1.5] }}>
         <WaveTopoPattern />
         <OrbitControls enableZoom={true} enablePan={true} enableRotate={true} />
